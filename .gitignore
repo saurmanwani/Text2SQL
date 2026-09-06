@@ -1,0 +1,19 @@
+.DS_Store
+.env
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+node_modules/
+dist/
+*.tsbuildinfo
+
+data/
+
+# Local archives and build instructions
+*.zip
+BUILD_PLAN.md
+cursorrules.txt
+plans/
