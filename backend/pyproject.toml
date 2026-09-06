@@ -8,10 +8,20 @@ version = "0.1.0"
 description = "Local-first natural-language-to-SQL backend"
 requires-python = ">=3.11"
 dependencies = [
+  "bcrypt==4.0.1",
+  "cryptography==44.0.3",
   "fastapi==0.115.12",
   "httpx==0.28.1",
+  "langgraph==0.4.1",
   "loguru==0.7.3",
+  "passlib[bcrypt]==1.7.4",
+  "psycopg[binary]==3.2.7",
   "pydantic-settings==2.9.1",
+  "pymysql==1.1.1",
+  "python-jose[cryptography]==3.4.0",
+  "sqlalchemy==2.0.40",
+  "sqlglot==26.16.4",
+  "typing-extensions==4.16.0",
   "uvicorn[standard]==0.34.2",
 ]
 
@@ -29,6 +39,7 @@ packages = ["app"]
 testpaths = ["tests"]
 addopts = "-q"
 asyncio_default_fixture_loop_scope = "function"
+markers = ["integration: requires an external database"]
 
 [tool.ruff]
 target-version = "py311"
@@ -36,3 +47,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/api/*.py" = ["B008"]
+"app/core/auth.py" = ["B008"]

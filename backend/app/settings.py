@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     app_port: int = 8090
     app_secret: str = "change-me-in-production"
     log_level: str = "INFO"
+    access_token_expire_minutes: int = 60 * 8
+    query_max_rows: int = 500
+    query_max_attempts: int = 3
 
     llm_provider: str = "ollama"
     llm_model: str = "qwen2.5-coder:7b"
@@ -19,6 +22,8 @@ class Settings(BaseSettings):
 
     metadata_database_url: str = "sqlite:///./data/text2sql.db"
     chroma_persist_directory: str = "./data/chroma"
+    cloud_summaries_enabled: bool = False
+    pii_redaction_enabled: bool = True
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

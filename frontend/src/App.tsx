@@ -1,65 +1,40 @@
-import { useQuery } from "@tanstack/react-query";
-import { Activity, Database } from "lucide-react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getHealth } from "@/lib/api";
+import { Layout } from "@/components/Layout";
+import { useAuth } from "@/hooks/useAuth";
+import { AdminAIPage } from "@/pages/AdminAIPage";
+import { AdminConnectionsPage } from "@/pages/AdminConnectionsPage";
+import { AdminSchemaPage } from "@/pages/AdminSchemaPage";
+import { AskPage } from "@/pages/AskPage";
+import { AuthPage } from "@/pages/AuthPage";
+import { HistoryPage } from "@/pages/HistoryPage";
 
-function HomePage() {
-  const health = useQuery({
-    queryKey: ["health"],
-    queryFn: ({ signal }) => getHealth(signal),
-    retry: 2,
-    refetchInterval: 30_000,
-  });
-
-  const statusLabel = health.isPending
-    ? "checking…"
-    : health.isError
-      ? "unreachable"
-      : health.data.status;
-  const isHealthy = health.data?.status === "healthy";
-
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <div className="mb-4 flex size-11 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Database className="size-5" aria-hidden="true" />
-          </div>
-          <CardTitle>Text2SQL</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Ask questions of your data in plain English.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between rounded-md border bg-muted/50 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Activity
-                className={isHealthy ? "size-4 text-emerald-500" : "size-4 text-muted-foreground"}
-                aria-hidden="true"
-              />
-              Backend: {statusLabel}
-            </div>
-            {health.data && (
-              <span className="text-xs text-muted-foreground">v{health.data.version}</span>
-            )}
-          </div>
-          {health.isError && (
-            <p className="mt-3 text-sm text-red-600">
-              Start the backend on port 8090, then refresh this page.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </main>
-  );
+function ProtectedRoute({ admin = false }: { admin?: boolean }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="p-8 text-sm">Loading…</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (admin && user.role !== "admin") return <Navigate to="/" replace />;
+  return <Outlet />;
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<AuthPage mode="login" />} />
+      <Route path="/register" element={<AuthPage mode="register" />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
+          <Route path="/" element={<AskPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route element={<ProtectedRoute admin />}>
+            <Route path="/admin/connections" element={<AdminConnectionsPage />} />
+            <Route path="/admin/ai" element={<AdminAIPage />} />
+            <Route path="/admin/schema/:connectionId" element={<AdminSchemaPage />} />
+            <Route path="/admin/audit" element={<HistoryPage admin />} />
+          </Route>
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

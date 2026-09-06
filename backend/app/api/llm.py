@@ -1,10 +1,13 @@
 from time import perf_counter
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from app.db.session import get_db
 from app.llm.client import LLMClient
 from app.llm.providers import get_provider_preset
+from app.llm.service import resolve_llm
 from app.settings import Settings, get_settings
 
 router = APIRouter(prefix="/api/llm", tags=["llm"])
@@ -27,15 +30,18 @@ def build_llm_client(settings: Settings) -> LLMClient:
 
 
 @router.get("/status", response_model=LLMStatusResponse)
-async def llm_status() -> LLMStatusResponse:
+async def llm_status(
+    database: Session = Depends(get_db),
+) -> LLMStatusResponse:
     settings = get_settings()
-    client = build_llm_client(settings)
+    resolved = resolve_llm(database, settings)
+    client = resolved.client
     started_at = perf_counter()
     reachable = await client.is_reachable()
     latency_ms = round((perf_counter() - started_at) * 1000)
 
     return LLMStatusResponse(
-        provider=settings.llm_provider,
+        provider=resolved.provider,
         model=client.model,
         reachable=reachable,
         latency_ms=latency_ms,
