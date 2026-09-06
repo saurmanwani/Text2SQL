@@ -7,12 +7,17 @@ def generation_prompt(
     dialect: str,
     schema_text: str,
     history: list[HistoryTurn],
+    examples: list[dict[str, object]],
     previous_error: str | None,
 ) -> str:
     history_text = "\n".join(
         f"Question: {turn['question']}\nSQL: {turn['sql']}" for turn in history[-3:]
     )
     retry_text = f"\nPrevious SQL was rejected because: {previous_error}" if previous_error else ""
+    examples_text = "\n".join(
+        f"Verified question: {example.get('question')}\nVerified SQL: {example.get('sql')}"
+        for example in examples
+    )
     return f"""
 Generate one read-only SQL query that answers the question.
 {DIALECT_RULES[dialect]}
@@ -25,6 +30,9 @@ Schema:
 
 Previous questions and their SQL:
 {history_text or "None"}
+
+Similar verified examples:
+{examples_text or "None"}
 
 Question: {question}{retry_text}
 """.strip()

@@ -12,6 +12,7 @@ from app.core.auth import current_user, require_role
 from app.core.crypto import encrypt_value
 from app.db.models import DatabaseConnection, User
 from app.db.session import get_db
+from app.knowledge.store import get_knowledge_store
 from app.settings import Settings, get_settings
 
 router = APIRouter(prefix="/api/connections", tags=["connections"])
@@ -89,6 +90,7 @@ def create_connection(
     database.add(connection)
     database.commit()
     database.refresh(connection)
+    get_knowledge_store().reindex_schema(connection.id, connector.get_schema(), [])
     return _response(connection)
 
 

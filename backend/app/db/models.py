@@ -63,6 +63,48 @@ class SchemaPermission(Base):
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class SchemaAnnotation(Base):
+    __tablename__ = "schema_annotations"
+    __table_args__ = (
+        UniqueConstraint(
+            "connection_id",
+            "table_name",
+            "column_name",
+            name="uq_schema_annotation",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    connection_id: Mapped[int] = mapped_column(ForeignKey("connections.id"), index=True)
+    table_name: Mapped[str] = mapped_column(String(255))
+    column_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    description: Mapped[str] = mapped_column(Text)
+
+
+class VerifiedExample(Base):
+    __tablename__ = "verified_examples"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    connection_id: Mapped[int] = mapped_column(ForeignKey("connections.id"), index=True)
+    question: Mapped[str] = mapped_column(Text)
+    sql: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(20))
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    audit_event_id: Mapped[int] = mapped_column(ForeignKey("audit_events.id"))
+
+
+class FeedbackEvent(Base):
+    __tablename__ = "feedback_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    audit_event_id: Mapped[int] = mapped_column(ForeignKey("audit_events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    verdict: Mapped[str] = mapped_column(String(10))
+    issue: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

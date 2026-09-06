@@ -3,7 +3,8 @@ from typing import Any
 from typing_extensions import TypedDict
 
 from app.connectors.base import Connector
-from app.db.models import SchemaPermission
+from app.db.models import SchemaAnnotation, SchemaPermission
+from app.knowledge.store import KnowledgeStore
 from app.llm.client import LLMClient
 from app.safety.validator import ValidationResult
 
@@ -38,3 +39,8 @@ class PipelineState(TypedDict, total=False):
     max_rows: int
     summaries_enabled: bool
     redact_before_summary: bool
+    connection_id: int
+    annotations: list[SchemaAnnotation]
+    knowledge_store: KnowledgeStore
+    examples: list[dict[str, Any]]
+    grounded_on: list[int]

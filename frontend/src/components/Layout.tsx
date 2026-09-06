@@ -19,9 +19,11 @@ export function Layout() {
             <Link to="/history" className="text-sm">History</Link>
             {user?.role === "admin" && (
               <>
+                <Link to="/admin" className="text-sm">Overview</Link>
                 <Link to="/admin/connections" className="text-sm">Connections</Link>
                 <Link to="/admin/ai" className="text-sm">AI</Link>
                 <Link to="/admin/audit" className="text-sm">Audit</Link>
+                <Link to="/admin/library" className="text-sm">Library</Link>
               </>
             )}
             <span className="text-xs text-muted-foreground">{user?.role}</span>

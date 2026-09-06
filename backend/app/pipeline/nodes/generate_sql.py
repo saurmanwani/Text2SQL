@@ -10,6 +10,7 @@ async def generate_sql(state: PipelineState) -> dict[str, object]:
         dialect=state["dialect"],
         schema_text=state["schema_text"],
         history=state.get("history", []),
+        examples=state.get("examples", []),
         previous_error=state.get("error"),
     )
     attempt = state.get("attempt", 0) + 1

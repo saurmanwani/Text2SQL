@@ -4,6 +4,8 @@ import { Layout } from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminAIPage } from "@/pages/AdminAIPage";
 import { AdminConnectionsPage } from "@/pages/AdminConnectionsPage";
+import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
+import { AdminLibraryPage } from "@/pages/AdminLibraryPage";
 import { AdminSchemaPage } from "@/pages/AdminSchemaPage";
 import { AskPage } from "@/pages/AskPage";
 import { AuthPage } from "@/pages/AuthPage";
@@ -27,10 +29,12 @@ export default function App() {
           <Route path="/" element={<AskPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route element={<ProtectedRoute admin />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/connections" element={<AdminConnectionsPage />} />
             <Route path="/admin/ai" element={<AdminAIPage />} />
             <Route path="/admin/schema/:connectionId" element={<AdminSchemaPage />} />
             <Route path="/admin/audit" element={<HistoryPage admin />} />
+            <Route path="/admin/library" element={<AdminLibraryPage />} />
           </Route>
         </Route>
       </Route>

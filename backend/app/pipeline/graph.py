@@ -5,6 +5,7 @@ from app.pipeline.nodes.followups import followups
 from app.pipeline.nodes.generate_sql import generate_sql
 from app.pipeline.nodes.handle_unanswerable import handle_unanswerable
 from app.pipeline.nodes.load_schema import load_schema
+from app.pipeline.nodes.retrieve_examples import retrieve_examples
 from app.pipeline.nodes.summarize import summarize
 from app.pipeline.nodes.validate_sql import validate_sql
 from app.pipeline.state import PipelineState
@@ -26,6 +27,7 @@ def route_after_validation(state: PipelineState) -> str:
 def build_pipeline():
     graph = StateGraph(PipelineState)
     graph.add_node("load_schema", load_schema)
+    graph.add_node("retrieve_examples", retrieve_examples)
     graph.add_node("generate_sql", generate_sql)
     graph.add_node("validate_sql", validate_sql)
     graph.add_node("execute_sql", execute_sql)
@@ -34,7 +36,8 @@ def build_pipeline():
     graph.add_node("handle_unanswerable", handle_unanswerable)
 
     graph.add_edge(START, "load_schema")
-    graph.add_edge("load_schema", "generate_sql")
+    graph.add_edge("load_schema", "retrieve_examples")
+    graph.add_edge("retrieve_examples", "generate_sql")
     graph.add_edge("load_schema", "generate_followups")
     graph.add_edge("generate_sql", "validate_sql")
     graph.add_conditional_edges("validate_sql", route_after_validation)

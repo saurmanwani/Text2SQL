@@ -4,7 +4,14 @@ import { api } from "@/lib/api";
 
 export function useAskQuery() {
   return useMutation({
-    mutationFn: ({ question, connectionId }: { question: string; connectionId: number }) =>
-      api.query(question, connectionId),
+    mutationFn: ({
+      question,
+      connectionId,
+      history,
+    }: {
+      question: string;
+      connectionId: number;
+      history: { question: string; sql: string }[];
+    }) => api.query(question, connectionId, history),
   });
 }

@@ -13,6 +13,7 @@ from app.api.admin import router as admin_router
 from app.api.audit import router as audit_router
 from app.api.auth import router as auth_router
 from app.api.connections import router as connections_router
+from app.api.feedback import router as feedback_router
 from app.api.llm import router as llm_router
 from app.api.query import router as query_router
 from app.bootstrap import bootstrap_application
@@ -104,6 +105,7 @@ def create_app() -> FastAPI:
     application.include_router(auth_router)
     application.include_router(connections_router)
     application.include_router(query_router)
+    application.include_router(feedback_router)
     application.include_router(admin_router)
     application.include_router(audit_router)
 

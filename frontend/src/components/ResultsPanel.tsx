@@ -1,3 +1,4 @@
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -5,7 +6,7 @@ import { DataTable } from "@/components/DataTable";
 import { FollowupChips } from "@/components/FollowupChips";
 import { SqlBlock } from "@/components/SqlBlock";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { QueryResult } from "@/lib/api";
+import { api, type QueryResult } from "@/lib/api";
 
 export function ResultsPanel({
   result,
@@ -17,6 +18,14 @@ export function ResultsPanel({
   onEnableSummary?: () => void;
 }) {
   const [tab, setTab] = useState<"summary" | "sql" | "table">("summary");
+  const [feedback, setFeedback] = useState("");
+  const [correcting, setCorrecting] = useState(false);
+  const [correctedSql, setCorrectedSql] = useState(result.sql ?? "");
+  const [issue, setIssue] = useState("wrong_filter");
+  const [correctedResult, setCorrectedResult] = useState<{
+    columns: string[];
+    rows: unknown[][];
+  } | null>(null);
   const tabs = ["summary", "sql", "table"] as const;
 
   return (
@@ -59,6 +68,55 @@ export function ResultsPanel({
           <DataTable columns={result.columns} rows={result.rows} />
         )}
         <FollowupChips questions={result.followups} onSelect={onFollowup} />
+        <div className="space-y-3 border-t pt-3">
+          <div className="flex items-center gap-2">
+            <button
+              title="Save as verified"
+              onClick={async () => {
+                await api.feedback({ audit_event_id: result.audit_event_id, verdict: "up" });
+                setFeedback("Saved as verified example");
+              }}
+              className="rounded border p-2"
+            >
+              <ThumbsUp className="size-4" />
+            </button>
+            <button
+              title="Correct this query"
+              onClick={() => setCorrecting(true)}
+              className="rounded border p-2"
+            >
+              <ThumbsDown className="size-4" />
+            </button>
+            {feedback && <span className="text-xs text-emerald-600">{feedback}</span>}
+            {result.grounded_on_count > 0 && (
+              <span className="rounded-full bg-muted px-2 py-1 text-xs">
+                Grounded on {result.grounded_on_count} verified queries
+              </span>
+            )}
+          </div>
+          {correcting && (
+            <div className="space-y-2 rounded-md border p-3">
+              <select value={issue} onChange={(event) => setIssue(event.target.value)} className="rounded border px-2 py-1 text-sm">
+                <option value="wrong_table">Wrong table</option><option value="wrong_filter">Wrong filter</option><option value="wrong_aggregation">Wrong aggregation</option><option value="wrong_numbers">Wrong numbers</option><option value="other">Other</option>
+              </select>
+              <textarea value={correctedSql} onChange={(event) => setCorrectedSql(event.target.value)} className="min-h-28 w-full rounded border p-2 font-mono text-sm" />
+              <button
+                onClick={async () => {
+                  const response = await api.feedback({ audit_event_id: result.audit_event_id, verdict: "down", issue, corrected_sql: correctedSql });
+                  setCorrectedResult({ columns: response.columns, rows: response.rows });
+                  setFeedback("Correction saved as a verified example");
+                  setCorrecting(false);
+                }}
+                className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground"
+              >
+                Run & save as correct
+              </button>
+            </div>
+          )}
+          {correctedResult && (
+            <DataTable columns={correctedResult.columns} rows={correctedResult.rows} />
+          )}
+        </div>
         <div className="flex flex-wrap gap-2 border-t pt-3 text-xs text-muted-foreground">
           <span>Tables: {result.tables_touched.join(", ") || "none"}</span>
           <span>· {result.duration_ms}ms</span>

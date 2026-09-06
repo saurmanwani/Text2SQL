@@ -43,6 +43,7 @@ export interface QueryResult {
   unanswerable: boolean;
   unanswerable_reason: string | null;
   duration_ms: number;
+  grounded_on_count: number;
 }
 
 export interface AuditEvent {
@@ -106,6 +107,23 @@ export interface SchemaConfig {
   permissions: Permission[];
 }
 
+export interface VerifiedExample {
+  id: number;
+  connection_id: number;
+  question: string;
+  sql: string;
+  source: string;
+  created_by: number;
+  created_at: string;
+  audit_event_id: number;
+}
+
+export interface Metrics {
+  total_queries: number;
+  blocked_count: number;
+  weeks: { week: string; queries: number; thumbs_up_rate: number | null }[];
+}
+
 const TOKEN_KEY = "text2sql_token";
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -126,6 +144,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     const body = (await response.json().catch(() => null)) as { detail?: string } | null;
     throw new Error(body?.detail ?? `Request failed (${response.status})`);
   }
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -148,11 +167,25 @@ export const api = {
     apiFetch<{ questions: string[] }>(`/api/connections/${id}/samples`),
   readonlySnippet: (id: number) =>
     apiFetch<{ dialect: string; sql: string }>(`/api/connections/${id}/readonly-snippet`),
-  query: (question: string, connection_id: number) =>
+  query: (
+    question: string,
+    connection_id: number,
+    history: { question: string; sql: string }[] = [],
+  ) =>
     apiFetch<QueryResult>("/api/query", {
       method: "POST",
-      body: JSON.stringify({ question, connection_id }),
+      body: JSON.stringify({ question, connection_id, history }),
     }),
+  feedback: (input: {
+    audit_event_id: number;
+    verdict: "up" | "down";
+    issue?: string;
+    corrected_sql?: string;
+  }) =>
+    apiFetch<{ saved: boolean; example_id: number | null; columns: string[]; rows: unknown[][] }>(
+      "/api/feedback",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
   history: () => apiFetch<AuditPage>("/api/audit/me"),
   audit: () => apiFetch<AuditPage>("/api/audit"),
   downloadAudit: async () => {
@@ -178,6 +211,24 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(permissions),
     }),
+  updateAnnotations: (
+    connectionId: number,
+    annotations: { table_name: string; column_name: string | null; description: string }[],
+  ) =>
+    apiFetch(`/api/admin/schema/${connectionId}/annotations`, {
+      method: "PUT",
+      body: JSON.stringify(annotations),
+    }),
+  library: (search = "") =>
+    apiFetch<VerifiedExample[]>(`/api/admin/library?search=${encodeURIComponent(search)}`),
+  updateExample: (id: number, sql: string) =>
+    apiFetch<VerifiedExample>(`/api/admin/library/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ sql }),
+    }),
+  deleteExample: (id: number) =>
+    apiFetch<void>(`/api/admin/library/${id}`, { method: "DELETE" }),
+  metrics: () => apiFetch<Metrics>("/api/admin/metrics"),
 };
 
 export { TOKEN_KEY };

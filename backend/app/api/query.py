@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 from app.audit.service import write_audit_event
 from app.connectors.factory import connector_from_record
 from app.core.auth import current_user
-from app.db.models import DatabaseConnection, SchemaPermission, User
+from app.db.models import DatabaseConnection, SchemaAnnotation, SchemaPermission, User
 from app.db.session import get_db
+from app.knowledge.store import get_knowledge_store
 from app.llm.service import resolve_llm
 from app.pipeline.graph import build_pipeline
 from app.pipeline.state import HistoryTurn
@@ -39,6 +40,7 @@ class QueryResponse(BaseModel):
     unanswerable: bool
     unanswerable_reason: str | None
     duration_ms: int
+    grounded_on_count: int
 
 
 @router.post("", response_model=QueryResponse)
@@ -62,6 +64,13 @@ async def run_query(
             )
         )
     )
+    annotations = list(
+        database.scalars(
+            select(SchemaAnnotation).where(
+                SchemaAnnotation.connection_id == connection.id
+            )
+        )
+    )
     started_at = perf_counter()
     state: dict[str, Any] = {}
     try:
@@ -72,6 +81,9 @@ async def run_query(
                 "llm": llm.client,
                 "role": user.role,
                 "permissions": permissions,
+                "annotations": annotations,
+                "connection_id": connection.id,
+                "knowledge_store": get_knowledge_store(),
                 "attempt": 0,
                 "max_attempts": settings.query_max_attempts,
                 "max_rows": settings.query_max_rows,
@@ -141,4 +153,5 @@ async def run_query(
         unanswerable=bool(state.get("unanswerable") or outcome in {"blocked", "error"}),
         unanswerable_reason=state.get("unanswerable_reason") or state.get("error"),
         duration_ms=duration_ms,
+        grounded_on_count=len(state.get("grounded_on", [])),
     )
